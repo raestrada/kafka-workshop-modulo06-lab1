@@ -161,7 +161,7 @@ done
 
 ```bash
 sudo echo "127.0.0.1 bootstrap.io" >> /etc/hosts
-sudo echo "127.0.0.1 broker0.io" >> /etc/hosts
+sudo echo "127.0.0.1 broker-0.io" >> /etc/hosts
 ```
 
 4. Descargar utilidades kafka:
@@ -175,8 +175,6 @@ $ mv kafka_2.13-2.8.0 kafka
 5. Obtener certificado TLS
 
 ```bash
-$ kubectl -n kafka get secret lab-cluster-ca-cert -o jsonpath='{.data.ca\.crt}' | base64 -d > ca.crt
-
 $ kubectl get secret lab-cluster-ca-cert -o jsonpath='{.data.ca\.p12}' | base64 -d > client.p12
 $ kubectl get secret lab-cluster-ca-cert -o jsonpath='{.data.ca\.password}' | base64 -d > client.password
 $ keytool -importkeystore -srckeystore client.p12 -destkeystore kafka.client.keystore.jks -srcstoretype pkcs12 -alias lab -storepass $(cat client.password) -noprompt
