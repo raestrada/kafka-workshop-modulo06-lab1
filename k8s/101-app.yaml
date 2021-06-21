@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kafka-workshop-modulo3-lab1
+  namespace: kafka
+spec:
+  containers:
+  - name: kafka-workshop-modulo3-lab1
+    image: kafka-workshop-modulo3-lab1

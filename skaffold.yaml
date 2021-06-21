@@ -1,0 +1,13 @@
+apiVersion: skaffold/v2beta17
+kind: Config
+metadata:
+  name: kafka-workshop-modulo3-lab1
+build:
+  artifacts:
+  - image: kafka-workshop-modulo3-lab1
+    docker:
+      dockerfile: Dockerfile
+deploy:
+  kubectl:
+    manifests:
+    - k8s/101-app.yaml
