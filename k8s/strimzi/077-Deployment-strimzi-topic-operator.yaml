@@ -23,11 +23,11 @@ spec:
           - /opt/strimzi/bin/topic_operator_run.sh
           env:
             - name: STRIMZI_RESOURCE_LABELS
-              value: "strimzi.io/cluster=my-cluster"
+              value: "strimzi.io/cluster=lab"
             - name: STRIMZI_KAFKA_BOOTSTRAP_SERVERS
-              value: my-cluster-kafka-bootstrap:9092
+              value: lab-kafka-bootstrap:9092
             - name: STRIMZI_ZOOKEEPER_CONNECT
-              value: my-cluster-zookeeper-client:2181
+              value: lab-zookeeper-client:2181
             - name: STRIMZI_ZOOKEEPER_SESSION_TIMEOUT_MS
               value: "18000"
             - name: STRIMZI_FULL_RECONCILIATION_INTERVAL_MS
@@ -39,9 +39,7 @@ spec:
             - name: STRIMZI_TLS_ENABLED
               value: "false"
             - name: STRIMZI_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
+              value: kafka
           livenessProbe:
             httpGet:
               path: /healthy

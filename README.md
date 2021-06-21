@@ -132,3 +132,86 @@ Para ejecutar la aplicación en k8s en modo desarrollo ejecutar:
 ```bash
 $ skaffold dev
 ```
+
+## Exponer servicios de k8s
+
+1. Configurar ingress en nodeport (ssl passthrough configurado):
+
+```bash
+$ kubectl apply -f k8s/nginx/deploy.yaml
+```
+
+2. Exponer nodeport en Docker:
+
+```bash
+for port in 80 443
+do
+    node_port=$(kubectl get service -n ingress-nginx ingress-nginx-controller -o=jsonpath="{.spec.ports[?(@.port == ${port})].nodePort}")
+
+    docker run -d --name strimzi-lab-kind-proxy-${port} \
+      --publish 127.0.0.1:${port}:${port} \
+      --network=kind \
+      --link strimzi-lab-control-plane:target \
+      alpine/socat -dd \
+      tcp-listen:${port},fork,reuseaddr tcp-connect:target:${node_port}
+done
+```
+
+3. Agregar entradas de DNS locales para el bootstrap y el broker:
+
+```bash
+sudo echo "127.0.0.1 bootstrap.io" >> /etc/hosts
+sudo echo "127.0.0.1 broker0.io" >> /etc/hosts
+```
+
+4. Descargar utilidades kafka:
+
+```bash
+$ curl "https://downloads.apache.org/kafka/2.8.0/kafka_2.13-2.8.0.tgz" -o kafka.tgz
+$ tar -zxvf kafka.tgz
+$ mv kafka_2.13-2.8.0 kafka
+```
+
+5. Obtener certificado TLS
+
+```bash
+$ kubectl -n kafka get secret lab-cluster-ca-cert -o jsonpath='{.data.ca\.crt}' | base64 -d > ca.crt
+
+$ kubectl get secret lab-cluster-ca-cert -o jsonpath='{.data.ca\.p12}' | base64 -d > client.p12
+$ kubectl get secret lab-cluster-ca-cert -o jsonpath='{.data.ca\.password}' | base64 -d > client.password
+$ keytool -importkeystore -srckeystore client.p12 -destkeystore kafka.client.keystore.jks -srcstoretype pkcs12 -alias lab -storepass $(cat client.password) -noprompt
+$ keytool -importkeystore -srckeystore client.p12 -destkeystore kafka.client.keystore.jks -srcstoretype pkcs12
+$ sudo mkdir -p /var/private/ssl
+$ sudo cp kafka.client.*.jks /var/private/ssl/
+```
+
+Crear archivo client.properties:
+
+```conf
+security.protocol=SSL
+ssl.keystore.location=/var/private/ssl/kafka.client.keystore.jks
+ssl.keystore.password=<keystore password>
+ssl.key.password=<pkcs12 password>
+ssl.truststore.location=/var/private/ssl/kafka.client.truststore.jks
+ssl.truststore.password=<truststore password>
+```
+
+Y ejecutar:
+
+```bash
+$ chmod 0600 client.properties
+```
+
+6. Conectar el productor:
+  
+```bash
+$ kafka/bin/kafka-console-producer.sh --broker-list producer.io:443 -topic test --producer.config client.properties
+```
+
+7. Abrir otro terminal y conectar el consumidor:
+
+```bash
+$ kafka/bin/kafka-console-consumer.sh bin/kafka-console-consumer --bootstrap-server bootstrap.io:443 --topic test --consumer.config client.properties --from-beginning
+```
+
+Ahora puedes escribir mensaje en el productor y ver como los recibe el consumidor.
