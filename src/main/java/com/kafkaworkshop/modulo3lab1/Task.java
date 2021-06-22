@@ -4,19 +4,19 @@ import java.util.UUID;
 
 public class Task {
 
-	private String id;
+  private String id;
 
-    public Task(){
-        UUID uuid = UUID.randomUUID();
-        id = uuid.toString();
-    }
+  public Task() {
+    UUID uuid = UUID.randomUUID();
+    id = uuid.toString();
+  }
 
-	public String getId() {
-		return id;
-	}
+  public String getId() {
+    return id;
+  }
 
-	@Override
-	public String toString() {
-		return "Task [id=" + id + "]";
-	}
+  @Override
+  public String toString() {
+    return "Task [id=" + id + "]";
+  }
 }
