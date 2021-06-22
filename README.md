@@ -213,3 +213,13 @@ $ kafka/bin/kafka-console-consumer.sh bin/kafka-console-consumer --bootstrap-ser
 ```
 
 Ahora puedes escribir mensaje en el productor y ver como los recibe el consumidor.
+
+## Ejecutar aplicación productor/cliente
+
+El proyecto tiene una aplicación que contiene un producto y un consumidor para kafka basado en Spring Boot. Para ejecutar la aplicación (sin skaffold), se debe correr:
+
+```bash
+KEY_PASSWORD=$(cat ~/client.password) BOOTSTRAP_ADDRESS="bootstrap.io:443" TRUSTED_STORE_LOCATION="/var/private/ssl/kafka.client.truststore.jks" TRUSTED_STORE_PASSWORD=password KEY_STORE_LOCATION="/var/private/ssl/kafka.client.keystore.jks" KEY_STORE_PASSWORD=password GROUP_ID="modulo3lab1" MESSAGE_QTY=10 ./mvnw spring-boot:run
+```
+
+Donde ```~/client.password ```es la localización del password del certificado para kafka.
