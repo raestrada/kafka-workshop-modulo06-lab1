@@ -1,4 +1,9 @@
-# Kafka Workshop Modulo03 Lab 1
+# Kafka Workshop Modulo06 Lab 1
+
+Basado en:
+
+- [Vinsguru Architecturla Patterns SAGA Coreography](https://github.com/vinsguru/vinsguru-blog-code-samples/tree/master/architectural-pattern/saga-choreography)
+- [Vinsguru Architecturla Patterns SAGA Orchestration](https://github.com/vinsguru/vinsguru-blog-code-samples/tree/master/architectural-pattern/saga-orchestration)
 
 > Una recomendación es trabajar en Linux y en caso de no tener recursos suficientes, se puede crear una cuenta
 gratis por USD$100 en [Digital Ocean's](https://try.digitalocean.com/freetrialoffer) o en [Linode](https://www.linode.com/lp/free-credit-100) y disfrutar de una máquina virtual Ubuntu de 4 cores
@@ -223,3 +228,178 @@ KEY_PASSWORD=$(cat ~/client.password) BOOTSTRAP_ADDRESS="bootstrap.io:443" TRUST
 ```
 
 Donde ```~/client.password ```es la localización del password del certificado para kafka.
+
+## SAGA Choreografy
+
+En el presente ejemplo, vamos a desplegar la aplicación en el cluster de Kubernetes, por lo tanto, no es necesaria
+seguridad TLS.
+
+> Considerar que dentro dle cluster la comunicación es encriptada y la autenticación no es necesaria. Si podría ser necesaria la autorización que está cubierta por Strimzi y por Kafka.
+
+Para ejejcutar en Java 16 es necesario permitir el acceso ilegal:
+
+```bash
+$ JAVA_TOOL_OPTIONS="--illegal-access=permit" ./mvnw install
+$ ./mvnw spring-boot:run -pl inventory-service &
+$ ./mvnw spring-boot:run -pl order-service &
+$ ./mvnw spring-boot:run -pl payment-service &
+```
+
+Es un proyecto multi-módulo, por eso es necesario iniciar los 3 servicios en forma independiente. Para correr en K8s, primero debemos generar el Dockerfile:
+
+```dockerfile
+FROM openjdk:16-jdk-slim as build
+
+ARG MODULE
+ARG SERVICE
+
+WORKDIR /app
+
+COPY ./${MODULE}/. ./
+
+RUN JAVA_TOOL_OPTIONS="--illegal-access=permit" ./mvnw package
+
+RUN  cp $SERVICE/target/*.jar $SERVICE/target/app.jar
+
+FROM openjdk:16-jdk-slim as production
+
+ARG SERVICE
+
+RUN useradd -u 1001 app
+
+WORKDIR /app
+
+COPY --from=build /app/$SERVICE/target/app.jar /app/app.jar
+
+USER app
+
+ENTRYPOINT ["java","-jar","/app/app.jar"]
+```
+
+Luego un manifesto para desplegar los servicios:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: inventory-service
+  namespace: kafka
+spec:
+  containers:
+  - name: inventory-service
+    image: inventory-service
+     resources:
+      limits:
+        memory: "200Mi"
+        cpu: "1"
+      requests:
+        memory: "100Mi"
+        cpu: "0.5"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: payment-service
+  namespace: kafka
+spec:
+  containers:
+  - name: payment-service
+    image: payment-service
+    resources:
+      limits:
+        memory: "200Mi"
+        cpu: "1"
+      requests:
+        memory: "100Mi"
+        cpu: "0.5"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: order-service
+  namespace: kafka
+  labels:
+    app: order-service
+spec:
+  containers:
+  - name: order-service
+    image: order-service
+     resources:
+      limits:
+        memory: "200Mi"
+        cpu: "1"
+      requests:
+        memory: "100Mi"
+        cpu: "0.5"
+    ports:
+        - name: web
+          containerPort: 8080
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+spec:
+  selector:
+    app: order-service
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: order-service
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /order-service
+        pathType: Prefix
+        backend:
+          service:
+            name: order-service
+            port:
+              number: 8080
+```
+
+Finalmente, configurar skaffold para desplegar los servicios:
+
+```yaml
+apiVersion: skaffold/v2beta17
+kind: Config
+metadata:
+  name: kafka-workshop-modulo3-lab1
+build:
+  artifacts:
+  - image: inventory-service
+    docker:
+      dockerfile: Dockerfile
+      buildArgs:
+        MODULE: 'saga-choreography'
+        SERVICE: 'inventory-service'
+  - image: order-service
+    docker:
+      dockerfile: Dockerfile
+      buildArgs:
+        MODULE: 'saga-choreography'
+        SERVICE: 'order-service'
+  - image: payment-service
+    docker:
+      dockerfile: Dockerfile
+      buildArgs:
+        MODULE: 'saga-choreography'
+        SERVICE: 'payment-service'
+deploy:
+  kubectl:
+    manifests:
+    - k8s/101-app.yaml
+```
+
+
+
+

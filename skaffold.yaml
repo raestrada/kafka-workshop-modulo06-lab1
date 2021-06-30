@@ -4,9 +4,24 @@ metadata:
   name: kafka-workshop-modulo3-lab1
 build:
   artifacts:
-  - image: kafka-workshop-modulo3-lab1
+  - image: inventory-service
     docker:
       dockerfile: Dockerfile
+      buildArgs:
+        MODULE: 'saga-choreography'
+        SERVICE: 'inventory-service'
+  - image: order-service
+    docker:
+      dockerfile: Dockerfile
+      buildArgs:
+        MODULE: 'saga-choreography'
+        SERVICE: 'order-service'
+  - image: payment-service
+    docker:
+      dockerfile: Dockerfile
+      buildArgs:
+        MODULE: 'saga-choreography'
+        SERVICE: 'payment-service'
 deploy:
   kubectl:
     manifests:

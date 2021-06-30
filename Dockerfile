@@ -1,20 +1,25 @@
 FROM openjdk:16-jdk-slim as build
 
+ARG MODULE
+ARG SERVICE
+
 WORKDIR /app
 
-COPY . ./
+COPY ./${MODULE}/. ./
 
-run ./mvnw package
+RUN JAVA_TOOL_OPTIONS="--illegal-access=permit" ./mvnw package
 
-run  cp target/*.jar target/app.jar
+RUN  cp $SERVICE/target/*.jar $SERVICE/target/app.jar
 
 FROM openjdk:16-jdk-slim as production
+
+ARG SERVICE
 
 RUN useradd -u 1001 app
 
 WORKDIR /app
 
-COPY --from=build /app/target/app.jar /app/app.jar
+COPY --from=build /app/$SERVICE/target/app.jar /app/app.jar
 
 USER app
 
