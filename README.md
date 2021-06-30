@@ -400,6 +400,44 @@ deploy:
     - k8s/101-app.yaml
 ```
 
+## Testing
 
+Primero crear una orden:
 
+```bash
+$ curl -X POST -H "Content-Type: application/json"  -H "Accept: application/json" -d '{"userId": 1, "productId": 3}'  http://localhost/order-service/order/create
+```
 
+```json
+{
+  "id":"8bd2f205-9e80-4e24-8335-749fb116ed34",
+  "userId":1,
+  "productId":3,
+  "price":300,
+  "orderStatus":"ORDER_CREATED",
+  "paymentStatus":null,
+  "inventoryStatus":null,
+  "version":0
+}
+```
+
+Luego verificar el estado de la orden:
+
+```bash
+$ curl localhost/order-service/order/all
+```
+
+```json
+[
+  {
+    "id":"8bd2f205-9e80-4e24-8335-749fb116ed34",
+    "userId":1,
+    "productId":3,
+    "price":300,
+    "orderStatus":"ORDER_COMPLETED",
+    "paymentStatus":"RESERVED",
+    "inventoryStatus":"RESERVED",
+    "version":2
+  }
+]
+```

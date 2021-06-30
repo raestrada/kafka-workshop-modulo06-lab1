@@ -4,6 +4,8 @@ spring.cloud.stream:
   bindings:
     paymentProcessor-in-0:
       destination: order-event
+      group: payment-service
     paymentProcessor-out-0:
       destination: payment-event
+      group: payment-service
 spring.kafka.bootstrapServers: https://lab-kafka-bootstrap:9092

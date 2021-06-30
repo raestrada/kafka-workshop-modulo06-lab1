@@ -6,8 +6,11 @@ spring.cloud.stream:
   bindings:
     orderSupplier-out-0:
       destination: order-event
+      group: order-service
     paymentEventConsumer-in-0:
       destination: payment-event
+      group: order-service
     inventoryEventConsumer-in-0:
       destination: inventory-event
+      group: order-service
 spring.kafka.bootstrapServers: https://lab-kafka-bootstrap:9092

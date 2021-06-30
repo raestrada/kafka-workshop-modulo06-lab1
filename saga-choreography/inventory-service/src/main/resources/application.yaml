@@ -4,6 +4,8 @@ spring.cloud.stream:
   bindings:
     inventoryProcessor-in-0:
       destination: order-event
+      group: inventory-service
     inventoryProcessor-out-0:
       destination: inventory-event
+      group: inventory-service
 spring.kafka.bootstrapServers: https://lab-kafka-bootstrap:9092
